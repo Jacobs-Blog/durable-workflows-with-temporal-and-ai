@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="src/TemporalRSSReader.AppHost/TemporalRSSReader.AppHost.csproj" />
+  <Project Path="src/TemporalRSSReader.Data/TemporalRSSReader.Data.csproj" />
+  <Project Path="src/TemporalRSSReader.ServiceDefaults/TemporalRSSReader.ServiceDefaults.csproj" />
+  <Project Path="src/TemporalRSSReader.Web/TemporalRSSReader.Web.csproj" />
+  <Project Path="src/TemporalRSSReader.Worker/TemporalRSSReader.Worker.csproj" />
+</Solution>

@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-TemporalRSSReader.Worker-49d3fc91-4882-458e-b0e4-09ce62ebe6fa</UserSecretsId>
+    <DefaultItemExcludes>$(DefaultItemExcludes);Verification/**</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Verification/**/*.cs" />
+    <PackageReference Include="Microsoft.Agents.AI" Version="1.28.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.13" />
+    <PackageReference Include="OllamaSharp" Version="5.5.2" />
+    <PackageReference Include="System.ServiceModel.Syndication" Version="11.0.0" />
+    <PackageReference Include="Temporalio.Extensions.Hosting" Version="1.22.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TemporalRSSReader.ServiceDefaults\TemporalRSSReader.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\TemporalRSSReader.Data\TemporalRSSReader.Data.csproj" />
+  </ItemGroup>
+</Project>

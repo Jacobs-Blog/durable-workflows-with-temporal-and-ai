@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reading room</title>
+<style>
+  :root { color-scheme: light; --ink:#20261f; --muted:#73796f; --line:#e4e7df; --paper:#fbfaf6; --card:#fff; --green:#265b46; --mint:#e8f2eb; --red:#a0443c; --rose:#faeeeb; --gold:#d7a944; }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.5 Georgia, "Times New Roman", serif; }
+  .shell { max-width:1200px; margin:auto; padding:36px clamp(18px,5vw,68px) 72px; }
+  header { display:flex; align-items:end; justify-content:space-between; gap:24px; padding-bottom:25px; border-bottom:1px solid var(--line); }
+  .eyebrow { margin:0 0 5px; color:var(--green); text-transform:uppercase; letter-spacing:.16em; font:700 .72rem/1.3 system-ui,sans-serif; }
+  h1 { margin:0; font-size:clamp(2.1rem,5vw,3.25rem); font-weight:500; letter-spacing:-.045em; line-height:1.05; }
+  .intro { margin:10px 0 0; color:var(--muted); max-width:570px; }
+  .export { color:var(--green); font:600 .88rem system-ui,sans-serif; white-space:nowrap; }
+  nav { display:flex; gap:8px; padding:20px 0 5px; }
+  nav a { padding:9px 15px; color:#666d63; text-decoration:none; border-radius:100px; font:600 .9rem system-ui,sans-serif; }
+  nav a[aria-current="page"] { background:var(--green); color:white; }
+  .toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:15px 0 18px; color:var(--muted); font: .88rem system-ui,sans-serif; }
+  .run-tools { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+  .run-status { flex-basis:100%; margin:0; color:var(--muted); font: .84rem/1.45 system-ui,sans-serif; }
+  .run-status.error { color:var(--red); }
+  .batch-tools { display:flex; flex-direction:column; align-items:flex-start; gap:8px; color:var(--ink); }
+  .batch-tools[hidden] { display:none; }
+  .selection-count { min-width:8rem; color:var(--muted); }
+  .batch-actions { display:flex; align-items:center; flex-wrap:nowrap; gap:8px; }
+  input[type=checkbox] { accent-color:var(--green); width:17px; height:17px; vertical-align:middle; }
+  .card-select { display:flex; align-items:center; gap:7px; color:var(--muted); font: .82rem system-ui,sans-serif; }
+  .card-select input { margin:0; }
+  button:disabled { cursor:wait; opacity:.65; transform:none; }
+  select { border:1px solid var(--line); border-radius:8px; padding:8px 28px 8px 10px; background:white; color:var(--ink); font:inherit; }
+  .cards { display:grid; gap:13px; }
+  article.card { display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:18px 22px; padding:23px 25px; background:var(--card); border:1px solid var(--line); border-radius:13px; box-shadow:0 4px 16px #26342308; }
+  article.card.saved-card { grid-template-columns:minmax(0,1fr) auto; }
+  .main { min-width:0; }
+  .meta { display:flex; flex-wrap:wrap; align-items:center; gap:9px; margin-bottom:8px; color:var(--muted); font: .78rem system-ui,sans-serif; }
+  .badge { padding:3px 8px; border-radius:99px; background:var(--mint); color:var(--green); font-weight:700; letter-spacing:.03em; }
+  .badge.skip { background:#f0f0eb; color:#656a60; }
+  .title { color:var(--ink); text-decoration:none; font-size:1.38rem; line-height:1.2; }
+  .title:hover { color:var(--green); text-decoration:underline; text-decoration-color:var(--gold); text-underline-offset:3px; }
+  .reason { margin:9px 0 0; color:#62675f; font-size:.96rem; }
+  .actions { display:flex; align-items:center; gap:8px; align-self:center; }
+  button { cursor:pointer; border:1px solid var(--line); border-radius:8px; padding:9px 13px; background:white; color:var(--ink); font:600 .88rem system-ui,sans-serif; transition:transform .16s,background .16s,border-color .16s; }
+  button:hover { transform:translateY(-1px); border-color:#aeb8aa; }
+  button:focus-visible, a:focus-visible, select:focus-visible, textarea:focus-visible { outline:3px solid #d7a944; outline-offset:2px; }
+  .accept { background:var(--green); color:white; border-color:var(--green); }
+  .accept:hover { background:#194a36; border-color:#194a36; }
+  .reject { color:var(--red); }
+  .feedback { grid-column:1/-1; display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; border-top:1px solid #f0f1ed; padding-top:14px; font: .84rem system-ui,sans-serif; }
+  .feedback-label { color:var(--muted); }
+  .vote { padding:6px 9px; }
+  .vote.selected { background:var(--mint); border-color:#a8c5ad; color:var(--green); }
+  .vote.selected.down { background:var(--rose); border-color:#e2b3ad; color:var(--red); }
+  .saved-feedback { color:var(--muted); font-style:italic; }
+  .feedback-panel { flex-basis:100%; display:grid; grid-template-columns:minmax(200px,1fr) auto; gap:10px; align-items:end; margin-top:5px; }
+  .feedback-panel label { display:block; margin-bottom:4px; color:#565d53; font-weight:600; }
+  textarea { width:100%; min-height:62px; resize:vertical; border:1px solid var(--line); border-radius:8px; padding:9px 10px; font: .9rem/1.45 system-ui,sans-serif; }
+  .feedback-tools { display:flex; gap:7px; }
+  .small { padding:8px 11px; }
+  .notice { color:var(--red); font: .85rem system-ui,sans-serif; }
+  .empty { padding:58px 20px; border:1px dashed #cfd5ca; border-radius:13px; text-align:center; color:var(--muted); }
+  .empty strong { display:block; margin-bottom:4px; color:var(--ink); font-size:1.2rem; }
+  .accepted-at { color:var(--muted); font: .8rem system-ui,sans-serif; }
+  @media(max-width:640px) {
+    .shell { padding-top:24px; } header { align-items:start; flex-direction:column; gap:14px; }
+    .toolbar { align-items:flex-start; flex-wrap:wrap; }
+    .run-tools { width:100%; }
+    article.card { grid-template-columns:1fr; gap:14px; padding:19px; }
+    .card-select, .actions { justify-self:start; } .feedback { grid-column:auto; }
+    .feedback-panel { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <div><p class="eyebrow">A quieter way to keep up</p><h1>Reading room</h1><p class="intro">Your daily reading, thoughtfully sorted. Accept what you want to keep, reject what you don't.</p></div>
+    <a class="export" href="/api/export" download="reviews.jsonl">Export reviewed ↗</a>
+  </header>
+  <nav aria-label="Reading list pages">
+    <a id="inbox-link" href="#inbox" aria-current="page">Review inbox</a>
+    <a id="saved-link" href="#saved">Saved articles</a>
+  </nav>
+  <main>
+    <div class="toolbar" id="toolbar">
+      <label id="filter-wrap">Show&nbsp;
+        <select id="filter" aria-label="Filter inbox">
+          <option value="all">Everything</option><option value="unreviewed">Not yet reviewed</option>
+          <option value="reviewed">Reviewed</option><option value="disagree">Where I disagree with the AI</option>
+        </select>
+      </label>
+      <span id="count" aria-live="polite"></span>
+      <div class="batch-tools" id="batch-tools">
+        <span id="selection-count" class="selection-count" aria-live="polite">0 selected</span>
+        <div class="batch-actions">
+          <button id="accept-selected" class="accept" type="button" disabled>Accept selected</button>
+          <button id="reject-selected" class="reject" type="button" disabled>Reject selected</button>
+        </div>
+      </div>
+      <div class="run-tools">
+        <button id="start-run" class="accept" type="button">Start run</button>
+        <button id="refresh-list" type="button">Refresh list</button>
+        <p id="run-status" class="run-status" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+    <div id="rows" class="cards" aria-live="polite"></div>
+  </main>
+</div>
+<script>
+const rows = document.getElementById('rows');
+const filter = document.getElementById('filter');
+const count = document.getElementById('count');
+const toolbar = document.getElementById('toolbar');
+const inboxLink = document.getElementById('inbox-link');
+const savedLink = document.getElementById('saved-link');
+const startRunButton = document.getElementById('start-run');
+const runStatus = document.getElementById('run-status');
+let page = 'inbox';
+let loadVersion = 0;
+let runInProgress = false;
+let selectedIds = new Set();
+let batchInProgress = false;
+let singleDecisionsInProgress = 0;
+const batchTools = document.getElementById('batch-tools');
+const selectionCount = document.getElementById('selection-count');
+const acceptSelected = document.getElementById('accept-selected');
+const rejectSelected = document.getElementById('reject-selected');
+
+function el(tag, props = {}, ...children) {
+  const e = document.createElement(tag);
+  for (const [key, value] of Object.entries(props)) {
+    if (key.startsWith('aria-') || key === 'role') e.setAttribute(key, value);
+    else e[key] = value;
+  }
+  e.append(...children);
+  return e;
+}
+const safeUrl = u => /^https?:\/\//i.test(u || '') ? u : '#';
+const text = v => v == null ? '' : String(v);
+
+function articleCard(r, saved = false) {
+  const card = el('article', { className:saved ? 'card saved-card' : 'card' });
+  const main = el('div', { className:'main' });
+  const meta = el('div', { className:'meta' });
+  if (!saved) meta.append(el('span', { className:'badge ' + (r.aiShouldRead ? '' : 'skip'), textContent:`${r.aiShouldRead ? 'READ' : 'SKIP'} · ${r.aiScore}/10` }));
+  meta.append(el('span', { textContent:new Date(saved ? r.acceptedAt : r.evaluatedAt).toLocaleDateString() }));
+  if (saved) meta.append(el('span', { className:'accepted-at', textContent:'Saved to your collection' }));
+  main.append(meta, el('a', { className:'title', href:safeUrl(r.link), target:'_blank', rel:'noopener noreferrer', textContent:text(r.title) }));
+  if (!saved && r.aiReason) main.append(el('p', { className:'reason', textContent:text(r.aiReason) }));
+  if (saved && r.aiReason) main.append(el('p', { className:'reason', textContent:text(r.aiReason) }));
+  card.append(main);
+  if (saved) {
+    card.append(el('div', { className:'actions' }, el('span', { className:'badge', textContent:'SAVED' })));
+    if (r.userVerdict || r.userReason) card.append(el('div', { className:'feedback' },
+      el('span', { className:'feedback-label', textContent:'Your feedback:' }),
+      el('span', { textContent:r.userVerdict === 'Liked' ? '👍 Liked' : r.userVerdict === 'Disliked' ? '👎 Disliked' : 'No vote' }),
+      r.userReason ? el('span', { className:'saved-feedback', textContent:`“${r.userReason}”` }) : document.createTextNode('')));
+  } else {
+    const selectLabel = el('label', { className:'card-select' });
+    const checkbox = el('input', { type:'checkbox', checked:selectedIds.has(String(r.id)), 'aria-label':`Select ${text(r.title)} for batch review` });
+    checkbox.dataset.reviewId = String(r.id);
+    checkbox.onchange = () => { checkbox.checked ? selectedIds.add(String(r.id)) : selectedIds.delete(String(r.id)); updateSelection(); };
+    selectLabel.append(checkbox, document.createTextNode('Select'));
+    const accept = el('button', { className:'accept', type:'button', textContent:'Accept · Save' });
+    const reject = el('button', { className:'reject', type:'button', textContent:'Reject' });
+    accept.onclick = () => { if (!batchInProgress) decide(r, 'accepted', accept, reject); };
+    reject.onclick = () => {
+      if (!batchInProgress && window.confirm(`Permanently reject “${text(r.title)}”? This deletes the article and any feedback attached to it.`)) decide(r, 'rejected', accept, reject);
+    };
+    card.append(selectLabel, el('div', { className:'actions' }, accept, reject));
+    card.append(feedbackUI(r));
+  }
+  return card;
+}
+function updateSelection() {
+  const visible = [...rows.querySelectorAll('input[data-review-id]')];
+  const visibleIds = visible.map(input => input.dataset.reviewId);
+  visible.forEach(input => { input.checked = selectedIds.has(input.dataset.reviewId); input.disabled = batchInProgress; });
+  const selectedVisible = visibleIds.filter(id => selectedIds.has(id)).length;
+  selectionCount.textContent = `${selectedVisible} selected`;
+  acceptSelected.disabled = rejectSelected.disabled = batchInProgress || singleDecisionsInProgress > 0 || !selectedVisible;
+  document.querySelectorAll('.actions button').forEach(button => { if (batchInProgress) button.disabled = true; });
+  filter.disabled = batchInProgress;
+  document.getElementById('refresh-list').disabled = batchInProgress;
+  inboxLink.style.pointerEvents = savedLink.style.pointerEvents = batchInProgress ? 'none' : '';
+  inboxLink.setAttribute('aria-disabled', String(batchInProgress));
+  savedLink.setAttribute('aria-disabled', String(batchInProgress));
+}
+async function decideBatch(decision) {
+  if (batchInProgress || singleDecisionsInProgress > 0) return;
+  const ids = [...selectedIds].filter(id => rows.querySelector(`input[data-review-id="${CSS.escape(id)}"]`));
+  if (!ids.length) return;
+  if (decision === 'rejected' && !window.confirm(`Permanently reject ${ids.length} selected ${ids.length === 1 ? 'article' : 'articles'}? This deletes them and any feedback attached to them.`)) return;
+  batchInProgress = true; updateSelection();
+  acceptSelected.textContent = rejectSelected.textContent = 'Working…';
+  const failed = [];
+  let cursor = 0;
+  async function worker() {
+    while (cursor < ids.length) {
+      const id = ids[cursor++];
+      try {
+        const res = await fetch(`/api/reviews/${encodeURIComponent(id)}/decision`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ decision }) });
+        if (!res.ok) throw new Error();
+      } catch { failed.push(id); }
+    }
+  }
+  await Promise.all(Array.from({ length:Math.min(4, ids.length) }, worker));
+  selectedIds = new Set(failed);
+  await load();
+  batchInProgress = false;
+  acceptSelected.textContent = 'Accept selected'; rejectSelected.textContent = 'Reject selected';
+  updateSelection();
+  runStatus.classList.toggle('error', failed.length > 0);
+  runStatus.textContent = failed.length
+    ? `${ids.length - failed.length} updated; ${failed.length} failed. Failed visible articles remain selected—retry or refresh.`
+    : `${ids.length} ${ids.length === 1 ? 'article' : 'articles'} updated.`;
+}
+acceptSelected.onclick = () => decideBatch('accepted');
+rejectSelected.onclick = () => decideBatch('rejected');
+
+function feedbackUI(r) {
+  const section = el('section', { className:'feedback', 'aria-label':`Feedback for ${text(r.title)}` });
+  section.append(el('span', { className:'feedback-label', textContent:'AI feedback (separate from accept / reject):' }));
+  const status = el('span', { className:'saved-feedback', textContent:savedFeedback(r) });
+  section.append(status);
+  const edit = el('button', { className:'small', type:'button', textContent:r.userVerdict || r.userReason ? 'Edit feedback' : 'Add feedback' });
+  section.append(edit);
+  edit.onclick = () => {
+    if (section.querySelector('.feedback-panel')) return;
+    const panel = el('div', { className:'feedback-panel' });
+    const labelId = `note-${r.id}`;
+    const choices = el('div', { role:'group', 'aria-label':'How did you feel about this article?' });
+    const like = el('button', { className:'vote', type:'button', textContent:'👍 I liked it', 'aria-pressed':'false' });
+    const dislike = el('button', { className:'vote down', type:'button', textContent:"👎 I didn't like it", 'aria-pressed':'false' });
+    let verdict = r.userVerdict || null;
+    const paint = () => {
+      like.classList.toggle('selected', verdict === 'Liked'); like.setAttribute('aria-pressed', String(verdict === 'Liked'));
+      dislike.classList.toggle('selected', verdict === 'Disliked'); dislike.classList.toggle('down', verdict === 'Disliked'); dislike.setAttribute('aria-pressed', String(verdict === 'Disliked'));
+    };
+    like.onclick = () => { verdict = verdict === 'Liked' ? null : 'Liked'; paint(); };
+    dislike.onclick = () => { verdict = verdict === 'Disliked' ? null : 'Disliked'; paint(); };
+    choices.append(like, dislike);
+    const noteLabel = el('label', { htmlFor:labelId, textContent:'Why? (optional)' });
+    const note = el('textarea', { id:labelId, placeholder:'What made this useful or not for you?', value:r.userReason || '' });
+    const field = el('div', {}, noteLabel, note);
+    const saveButton = el('button', { className:'accept small', type:'button', textContent:'Save feedback' });
+    const cancel = el('button', { className:'small', type:'button', textContent:'Cancel' });
+    const error = el('span', { className:'notice', role:'alert' });
+    cancel.onclick = () => panel.remove();
+    saveButton.onclick = async () => {
+      saveButton.disabled = true; error.textContent = '';
+      try {
+        const res = await fetch(`/api/reviews/${r.id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ verdict, reason:note.value.trim() || null }) });
+        if (!res.ok) throw new Error('Saving feedback failed. Your saved feedback is unchanged.');
+        r.userVerdict = verdict; r.userReason = note.value.trim() || null;
+        status.textContent = savedFeedback(r); edit.textContent = r.userVerdict || r.userReason ? 'Edit feedback' : 'Add feedback';
+        panel.remove();
+      } catch (e) { error.textContent = e.message || 'Saving feedback failed. Please try again.'; saveButton.disabled = false; }
+    };
+    const tools = el('div', { className:'feedback-tools' }, saveButton, cancel);
+    panel.append(choices, field, tools, error); section.append(panel); paint();
+    like.focus();
+  };
+  return section;
+}
+
+function savedFeedback(r) {
+  const pieces = [];
+  if (r.userVerdict === 'Liked') pieces.push('👍 Liked');
+  if (r.userVerdict === 'Disliked') pieces.push('👎 Disliked');
+  if (r.userVerdict) pieces.push((r.userVerdict === 'Liked') === r.aiShouldRead ? 'Agrees with AI' : 'Differs from AI');
+  if (r.userReason) pieces.push(`“${r.userReason}”`);
+  return pieces.join(' · ') || 'No feedback saved';
+}
+async function decide(r, decision, accept, reject) {
+  if (batchInProgress || singleDecisionsInProgress > 0) return;
+  singleDecisionsInProgress++;
+  updateSelection();
+  accept.disabled = reject.disabled = true;
+  try {
+    const res = await fetch(`/api/reviews/${r.id}/decision`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ decision }) });
+    if (!res.ok) throw new Error('Could not update this article. Please try again.');
+    await load();
+  } catch (e) {
+    accept.disabled = reject.disabled = false;
+    alert(e.message || 'Could not update this article. Please try again.');
+  } finally {
+    singleDecisionsInProgress--;
+    updateSelection();
+  }
+}
+async function load() {
+  const version = ++loadVersion;
+  const requestedPage = page;
+  const requestedFilter = filter.value;
+  rows.setAttribute('aria-busy','true');
+  try {
+    const res = await fetch(requestedPage === 'saved' ? '/api/saved' : `/api/reviews?filter=${encodeURIComponent(requestedFilter)}`);
+    if (!res.ok) throw new Error('Could not load articles.');
+    const data = await res.json();
+    if (version !== loadVersion) return;
+    if (requestedPage === 'saved') selectedIds.clear();
+    else {
+      const visibleIds = new Set(data.map(r => String(r.id)));
+      selectedIds = new Set([...selectedIds].filter(id => visibleIds.has(id)));
+    }
+    rows.replaceChildren();
+    if (!data.length) rows.append(el('div', { className:'empty' },
+      el('strong', { textContent:requestedPage === 'saved' ? 'Nothing saved just yet' : 'Your inbox is clear' }),
+      document.createTextNode(requestedPage === 'saved' ? 'Accepted articles will live here.' : 'There are no articles matching this filter.')));
+    else data.forEach(r => rows.append(articleCard(r, requestedPage === 'saved')));
+    count.textContent = `${data.length} ${requestedPage === 'saved' ? 'saved articles' : 'articles to review'}`;
+    batchTools.hidden = requestedPage === 'saved';
+    updateSelection();
+  } catch (e) {
+    if (version !== loadVersion) return;
+    rows.replaceChildren(el('div', { className:'empty', role:'alert', textContent:e.message }));
+    count.textContent = '';
+    updateSelection();
+  } finally {
+    if (version === loadVersion) rows.setAttribute('aria-busy','false');
+  }
+}
+async function startRun() {
+  if (runInProgress) return;
+  runInProgress = true;
+  startRunButton.disabled = true;
+  startRunButton.textContent = 'Starting…';
+  runStatus.classList.remove('error');
+  runStatus.textContent = 'Submitting a run…';
+  try {
+    const res = await fetch('/api/runs', { method:'POST' });
+    if (res.status !== 202) {
+      let message = '';
+      try {
+        const body = await res.json();
+        message = typeof body.error === 'string' ? body.error : typeof body.message === 'string' ? body.message : '';
+      } catch { /* Use the safe fallback below when there is no readable JSON error. */ }
+      throw new Error(message || 'Could not start a run. Please try again.');
+    }
+    runStatus.textContent = 'Run submitted. It works in the background, so new results may take a little while. Refresh the list to check for updates; duplicate articles are skipped.';
+  } catch (e) {
+    runStatus.classList.add('error');
+    runStatus.textContent = e.message || 'Could not start a run. Please try again.';
+  } finally {
+    runInProgress = false;
+    startRunButton.disabled = false;
+    startRunButton.textContent = 'Start run';
+  }
+}
+startRunButton.onclick = startRun;
+document.getElementById('refresh-list').onclick = load;
+function navigate(next) {
+  if (batchInProgress) { location.hash = page === 'saved' ? '#saved' : '#inbox'; return; }
+  if (next !== page) selectedIds.clear();
+  page = next;
+  inboxLink.toggleAttribute('aria-current', page === 'inbox');
+  savedLink.toggleAttribute('aria-current', page === 'saved');
+  if (page === 'inbox') inboxLink.setAttribute('aria-current','page'); else inboxLink.removeAttribute('aria-current');
+  if (page === 'saved') savedLink.setAttribute('aria-current','page'); else savedLink.removeAttribute('aria-current');
+  document.getElementById('filter-wrap').hidden = page === 'saved';
+  load();
+}
+window.addEventListener('hashchange', () => navigate(location.hash === '#saved' ? 'saved' : 'inbox'));
+filter.onchange = () => { selectedIds.clear(); load(); };
+if (location.hash === '#saved') navigate('saved'); else load();
+</script>
+</body>
+</html>
